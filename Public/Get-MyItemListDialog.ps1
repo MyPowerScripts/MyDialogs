@@ -73,14 +73,10 @@ function Get-MyItemListDialog()
   [CmdletBinding(DefaultParameterSetName = "StandAlone")]
   param (
     [Parameter(ParameterSetName = "Dialog")]
-    [Parameter(ParameterSetName = "DialogVN")]
     [Parameter(ParameterSetName = "StandAlone")]
-    [Parameter(ParameterSetName = "StandAloneVN")]
     [String]$Title = "Get-MyItemListDialog",
     [Parameter(Mandatory = $True, ParameterSetName = "DialogNT")]
-    [Parameter(Mandatory = $True, ParameterSetName = "DialogNTVN")]
     [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNT")]
-    [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNTVN")]
     [Switch]$NoTitle,
     [String]$GroupName = "Get MyItem Value",
     [String[]]$Value,
@@ -97,13 +93,9 @@ function Get-MyItemListDialog()
     [Switch]$NoCancel,
     [Parameter(ParameterSetName = "StandAlone")]
     [Parameter(ParameterSetName = "StandAloneNT")]
-    [Parameter(ParameterSetName = "StandAloneVN")]
-    [Parameter(ParameterSetName = "StandAloneNTVN")]
     [Switch]$TopMost,
     [Parameter(Mandatory = $True, ParameterSetName = "Dialog")]
     [Parameter(Mandatory = $True, ParameterSetName = "DialogNT")]
-    [Parameter(Mandatory = $True, ParameterSetName = "DialogVN")]
-    [Parameter(Mandatory = $True, ParameterSetName = "DialogNTVN")]
     [System.Windows.Forms.Form]$Owner,
     [ValidateRange(2, 8)]
     [int]$ControlSpace = $Script:MyDialogDefaults.ControlSpace,
@@ -149,7 +141,7 @@ function Get-MyItemListDialog()
   $MyDialogForm.MaximizeBox = $False
   $MyDialogForm.MinimizeBox = $False
   $MyDialogForm.Name = "MyDialogForm"
-  if ($PSCmdlet.ParameterSetName -eq "Dialog")
+  if ($PSBoundParameters.ContainsKey("Owner"))
   {
     $MyDialogForm.Owner = $Owner
     $MyDialogForm.ShowInTaskbar = $False
@@ -163,7 +155,7 @@ function Get-MyItemListDialog()
     $MyDialogForm.TopMost = $TopMost.IsPresent
   }
   $MyDialogForm.ShowIcon = $False
-  $MyDialogForm.Tag = $Tag
+  $MyDialogForm.Tag = $Value
   $MyDialogForm.Text = $Title
   #endregion
     
@@ -213,7 +205,6 @@ function Get-MyItemListDialog()
   #region $MyDialogReturnGroupBox = System.Windows.Forms.GroupBox
   Write-Verbose -Message "Creating Form Control `$MyDialogReturnGroupBox"
   $MyDialogReturnGroupBox = New-Object -TypeName System.Windows.Forms.GroupBox
-  # Location of First Control New-Object -TypeName System.Drawing.Point($ControlSpace, ([System.Math]::Ceiling($MyDialogReturnGroupBox.CreateGraphics().MeasureString($MyDialogReturnGroupBox.Text, $MyDialogReturnGroupBox.Font).Height + ($ControlSpace / 2))))
   $MyDialogForm.Controls.Add($MyDialogReturnGroupBox)
   #$MyDialogReturnGroupBox.BackColor = $MyDialogColor.BackColor
   $MyDialogReturnGroupBox.Font = $TempFont.Bold
@@ -249,7 +240,6 @@ function Get-MyItemListDialog()
   $MyDialogValueTextBox.SelectionStart = 0
   $MyDialogValueTextBox.Size = New-Object -TypeName System.Drawing.Size(([Math]::Ceiling($ValueWidth * $TempFont.Width)), ($MyDialogValueTextBox.Height + ($TempFont.Height * ($ValueHeight - 1))))
   $MyDialogValueTextBox.Text = $Value -join "`r`n"
-  $MyDialogValueTextBox.Tag = $MyDialogValueTextBox.Text
   #endregion
   
   #region function Start-MyDialogValueTextBoxKeyPress
@@ -344,7 +334,7 @@ function Get-MyItemListDialog()
     {
       if (($Match = [RegEx]::Matches($MyDialogValueTextBox.Text, $ValidateValue)).Count)
       {
-        $MyDialogValueTextBox.Tag = @($Match | Where-Object -FilterScript { $PSItem.Groups["Return"].Success } | ForEach-Object -Process { $PSItem.Groups["Return"].Value })
+        $MyDialogForm.Tag = @($Match | Where-Object -FilterScript { $PSItem.Groups["Return"].Success } | ForEach-Object -Process { $PSItem.Groups["Return"].Value })
         $MyDialogForm.DialogResult = [System.Windows.Forms.DialogResult]::OK
       }
     }
@@ -397,7 +387,7 @@ function Get-MyItemListDialog()
       )
       Write-Verbose -Message "Enter Click Event for `$MyDialogResetButton"
       
-      $MyDialogValueTextBox.Text = $MyDialogValueTextBox.Tag
+      $MyDialogValueTextBox.Tag = $MyDialogForm.Tag -join "`r`n"
       
       Write-Verbose -Message "Exit Click Event for `$MyDialogResetButton"
     }
@@ -433,11 +423,11 @@ function Get-MyItemListDialog()
   {
     if ($AllowDuplicates.IsPresent)
     {
-      $ReturnValue.Value = $MyDialogValueTextBox.Tag
+      $ReturnValue.Value = @($MyDialogForm.Tag)
     }
     else
     {
-      $ReturnValue.Value = @($MyDialogValueTextBox.Tag | Select-Object -Unique)
+      $ReturnValue.Value = @($MyDialogForm.Tag | Select-Object -Unique)
     }
   }
   $ReturnValue

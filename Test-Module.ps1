@@ -39,6 +39,9 @@ Import-Module -Name "$PWD\MyDialogs.psm1" -Verbose
 Get-MyItemDialog
 Get-MyItemListDialog
 
+Get-MyNamedItemDialog -Value ([Ordered]@{ "One" = 1; "Two" = 2; "Three" = 3; "Four" = 4; "Five" = 5; "Six" = 6; "Seven" = 7; "Eight" = 8; }) -ShowReset
+
+
 $Error
 
 $Host.EnterNestedPrompt()

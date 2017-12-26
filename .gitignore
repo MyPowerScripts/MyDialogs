@@ -1,2 +1,6 @@
-Public/New Folder/*.*
+/Public/Old/*.*
+/Public/Old/Done/*.*
+/Public/Old/My Old/*.*
+/Public/Old/My Old/Done/*.*
 _Template*.*
+_RunMe.cmd
