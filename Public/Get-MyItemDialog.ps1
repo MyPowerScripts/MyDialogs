@@ -74,26 +74,38 @@ function Get-MyItemDialog()
   [CmdletBinding(DefaultParameterSetName = "StandAlone")]
   param (
     [Parameter(ParameterSetName = "Dialog")]
-    [Parameter(ParameterSetName = "DialogVN")]
     [Parameter(ParameterSetName = "StandAlone")]
+    [Parameter(ParameterSetName = "DialogVN")]
     [Parameter(ParameterSetName = "StandAloneVN")]
+    [Parameter(ParameterSetName = "DialogWP")]
+    [Parameter(ParameterSetName = "StandAloneWP")]
     [String]$Title = "Get-MyItemDialog",
     [Parameter(Mandatory = $True, ParameterSetName = "DialogNT")]
-    [Parameter(Mandatory = $True, ParameterSetName = "DialogNTVN")]
     [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNT")]
+    [Parameter(Mandatory = $True, ParameterSetName = "DialogNTVN")]
     [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNTVN")]
+    [Parameter(Mandatory = $True, ParameterSetName = "DialogNTWP")]
+    [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNTWP")]
     [Switch]$NoTitle,
     [String]$GroupName = "Get MyItem Value",
+    [Parameter(Mandatory = $True, ParameterSetName = "DialogWP")]
+    [Parameter(Mandatory = $True, ParameterSetName = "StandAloneWP")]
+    [Parameter(Mandatory = $True, ParameterSetName = "DialogNTWP")]
+    [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNTWP")]
     [String]$Prompt,
+    [Parameter(ParameterSetName = "DialogWP")]
+    [Parameter(ParameterSetName = "StandAloneWP")]
+    [Parameter(ParameterSetName = "DialogNTWP")]
+    [Parameter(ParameterSetName = "StandAloneNTWP")]
     [System.Drawing.ContentAlignment]$PromptAlign = [System.Drawing.ContentAlignment]::TopLeft,
     [Parameter(Mandatory = $True, ParameterSetName = "DialogVN")]
-    [Parameter(Mandatory = $True, ParameterSetName = "DialogNTVN")]
     [Parameter(Mandatory = $True, ParameterSetName = "StandAloneVN")]
+    [Parameter(Mandatory = $True, ParameterSetName = "DialogNTVN")]
     [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNTVN")]
     [String]$ValueName,
     [Parameter(ParameterSetName = "DialogVN")]
-    [Parameter(ParameterSetName = "DialogNTVN")]
     [Parameter(ParameterSetName = "StandAloneVN")]
+    [Parameter(ParameterSetName = "DialogNTVN")]
     [Parameter(ParameterSetName = "StandAloneNTVN")]
     [ValidateRange(0, 50)]
     [Int]$ValueNameWidth = 0,
@@ -109,12 +121,16 @@ function Get-MyItemDialog()
     [Parameter(ParameterSetName = "StandAlone")]
     [Parameter(ParameterSetName = "StandAloneNT")]
     [Parameter(ParameterSetName = "StandAloneVN")]
+    [Parameter(ParameterSetName = "StandAloneWP")]
     [Parameter(ParameterSetName = "StandAloneNTVN")]
+    [Parameter(ParameterSetName = "StandAloneNTWP")]
     [Switch]$TopMost,
     [Parameter(Mandatory = $True, ParameterSetName = "Dialog")]
     [Parameter(Mandatory = $True, ParameterSetName = "DialogNT")]
     [Parameter(Mandatory = $True, ParameterSetName = "DialogVN")]
+    [Parameter(Mandatory = $True, ParameterSetName = "DialogWP")]
     [Parameter(Mandatory = $True, ParameterSetName = "DialogNTVN")]
+    [Parameter(Mandatory = $True, ParameterSetName = "DialogNTWP")]
     [System.Windows.Forms.Form]$Owner,
     [ValidateRange(2, 8)]
     [int]$ControlSpace = $Script:MyDialogDefaults.ControlSpace,
@@ -148,13 +164,13 @@ function Get-MyItemDialog()
   $MyDialogForm.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
   $MyDialogForm.Font = $TempFont.Bold
   $MyDialogForm.ForeColor = $ForegroundColor
-  if ($NoTitle)
+  if ($NoTitle.IsPresent)
   {
     $MyDialogForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
   }
   else
   {
-    $MyDialogForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedToolWindow
+    $MyDialogForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
   }
   $MyDialogForm.KeyPreview = $True
   $MyDialogForm.MaximizeBox = $False

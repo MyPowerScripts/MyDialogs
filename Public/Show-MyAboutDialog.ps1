@@ -104,7 +104,7 @@ function Show-MyAboutDialog()
   }
   else
   {
-    $MyDialogForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedToolWindow
+    $MyDialogForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
   }
   $MyDialogForm.KeyPreview = $True
   $MyDialogForm.MaximizeBox = $False
