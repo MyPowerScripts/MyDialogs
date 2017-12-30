@@ -16,10 +16,10 @@ function Get-MyItemDialog()
     .PARAMETER Prompt
     .PARAMETER PromptAlign
       Prompt Text Alignment
-    .PARAMETER ValueName
+    .PARAMETER ValueLabel
       Name of Value
-    .PARAMETER ValueNameWidth
-      With of ValueName Label. A width of 0 ValueName will autosize
+    .PARAMETER ValueLabelWidth
+      Width of ValueLabel Label. A width of 0 ValueLabel will autosize
     .PARAMETER Value
       Initial Default Value
     .PARAMETER MaxLength
@@ -35,6 +35,8 @@ function Get-MyItemDialog()
   
       "^(?<Return>.+)`$"
       "^(?<Return>[\w\.]+)`$"
+    .PARAMETER Secure
+      Obscure Entered Text
     .PARAMETER ShowReset
       Show Reset Value Button
     .PARAMETER NoCancel
@@ -102,13 +104,13 @@ function Get-MyItemDialog()
     [Parameter(Mandatory = $True, ParameterSetName = "StandAloneVN")]
     [Parameter(Mandatory = $True, ParameterSetName = "DialogNTVN")]
     [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNTVN")]
-    [String]$ValueName,
+    [String]$ValueLabel,
     [Parameter(ParameterSetName = "DialogVN")]
     [Parameter(ParameterSetName = "StandAloneVN")]
     [Parameter(ParameterSetName = "DialogNTVN")]
     [Parameter(ParameterSetName = "StandAloneNTVN")]
     [ValidateRange(0, 50)]
-    [Int]$ValueNameWidth = 0,
+    [Int]$ValueLabelWidth = 0,
     [String]$Value,
     [ValidateRange(1, 32767)]
     [Int]$MaxLength = 50,
@@ -116,6 +118,7 @@ function Get-MyItemDialog()
     [Int]$ValueWidth = 35,
     [String]$ValidateKeyPress = ".",
     [String]$ValidateValue = "^(?<Return>.+)`$",
+    [Switch]$Secure,
     [Switch]$ShowReset,
     [Switch]$NoCancel,
     [Parameter(ParameterSetName = "StandAlone")]
@@ -256,13 +259,13 @@ function Get-MyItemDialog()
   #endregion
   
   #region ******** $MyDialogReturnGroupBox Controls ********
-  if ($PSBoundParameters.ContainsKey("ValueName"))
+  if ($PSBoundParameters.ContainsKey("ValueLabel"))
   {
-    $TempValueNameWidth = [Math]::Max($ValueNameWidth, ($ValueName.Length + 2))
+    $TempValueLabelWidth = [Math]::Max($ValueLabelWidth, ($ValueLabel.Length + 2))
   }
   else
   {
-    $TempValueNameWidth = 0
+    $TempValueLabelWidth = 0
   }
   
   $TempBottom = $TempFont.Height
@@ -277,7 +280,7 @@ function Get-MyItemDialog()
     $MyDialogPromptLabel.ForeColor = $LabelForegroundColor
     $MyDialogPromptLabel.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, ($TempFont.Height + $ControlSpace))
     $MyDialogPromptLabel.Name = "MyDialogPromptLabel"
-    $TempWidth = [Math]::Ceiling(($TempValueNameWidth + $ValueWidth) * $TempFont.Width)
+    $TempWidth = [Math]::Ceiling(($TempValueLabelWidth + $ValueWidth) * $TempFont.Width)
     $TempHeight = [Math]::Ceiling(($Prompt.Length * $TempFont.Width) / $TempWidth)
     $MyDialogPromptLabel.Size = New-Object -TypeName System.Drawing.Size($TempWidth, ($TempHeight * $TempFont.Height))
     $MyDialogPromptLabel.Text = "$($Prompt)"
@@ -287,7 +290,7 @@ function Get-MyItemDialog()
   }
   
   $TempLeft = $ControlSpace
-  if ($PSBoundParameters.ContainsKey("ValueName"))
+  if ($PSBoundParameters.ContainsKey("ValueLabel"))
   {
     #region $MyDialogValueLabel = System.Windows.Forms.Label
     Write-Verbose -Message "Creating Form Control `$MyDialogValueLabel"
@@ -298,13 +301,13 @@ function Get-MyItemDialog()
     $MyDialogValueLabel.ForeColor = $LabelForegroundColor
     $MyDialogValueLabel.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, $TempBottom)
     $MyDialogValueLabel.Name = "MyDialogValueLabel"
-    $MyDialogValueLabel.Text = "$($ValueName):"
+    $MyDialogValueLabel.Text = "$($ValueLabel):"
     $MyDialogValueLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleRight
     #$MyDialogValueLabel.Width = 100
     #endregion
     $TempHeight = $MyDialogValueLabel.Height
     $MyDialogValueLabel.AutoSize = $False
-    $MyDialogValueLabel.Size = New-Object -TypeName System.Drawing.Size(([Math]::Ceiling($TempValueNameWidth * $TempFont.Width)), $TempHeight)
+    $MyDialogValueLabel.Size = New-Object -TypeName System.Drawing.Size(([Math]::Ceiling($TempValueLabelWidth * $TempFont.Width)), $TempHeight)
     $TempLeft = $MyDialogValueLabel.Right + $ControlSpace
   }
   
@@ -318,6 +321,10 @@ function Get-MyItemDialog()
   $MyDialogValueTextBox.Location = New-Object -TypeName System.Drawing.Point($TempLeft, $TempBottom)
   $MyDialogValueTextBox.MaxLength = $MaxLength
   $MyDialogValueTextBox.Name = "MyDialogValueTextBox"
+  if ($Secure.IsPresent)
+  {
+    $MyDialogValueTextBox.PasswordChar = "*"
+  }
   $MyDialogValueTextBox.SelectedText = ""
   $MyDialogValueTextBox.SelectionLength = 0
   $MyDialogValueTextBox.SelectionStart = 0

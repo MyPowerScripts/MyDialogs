@@ -13,8 +13,8 @@ function Get-MyNamedItemDialog()
       Hide Dialog Title Bar
     .PARAMETER GroupName
       Name of Return Control Group
-    .PARAMETER ValueNameWidth
-      With of ValueName Label. A width of 0 ValueName will autosize
+    .PARAMETER ValueLabelWidth
+      Width of ValueLabel Label. A width of 0 ValueLabel will autosize
     .PARAMETER Value
       Initial Default Value
     .PARAMETER MaxLength
@@ -76,7 +76,7 @@ function Get-MyNamedItemDialog()
     [Switch]$NoTitle,
     [String]$GroupName = "Get MyItem Value",
     [ValidateRange(0, 50)]
-    [Int]$ValueNameWidth = 0,
+    [Int]$ValueLabelWidth = 0,
     [Parameter(Mandatory = $True)]
     [System.Collections.Specialized.OrderedDictionary]$Value,
     [ValidateRange(1, 32767)]
@@ -218,7 +218,7 @@ function Get-MyNamedItemDialog()
   
   #region ******** $MyDialogReturnGroupBox Controls ********
   
-  $TempValueNameWidth = [Math]::Max($ValueNameWidth, (($Value.Keys | Sort-Object -Property Length -Descending | Select-Object -ExpandProperty Length -Unique -First 1) + 2))
+  $TempValueLabelWidth = [Math]::Max($ValueLabelWidth, (($Value.Keys | Sort-Object -Property Length -Descending | Select-Object -ExpandProperty Length -Unique -First 1) + 2))
   
   #region function Start-MyDialogValueTextBoxKeyPress
   function Start-MyDialogValueTextBoxKeyPress()
@@ -274,7 +274,7 @@ function Get-MyNamedItemDialog()
     #endregion
     $TempHeight = $MyDialogValueLabel.Height
     $MyDialogValueLabel.AutoSize = $False
-    $MyDialogValueLabel.Size = New-Object -TypeName System.Drawing.Size(([Math]::Ceiling($TempValueNameWidth * $TempFont.Width)), $TempHeight)
+    $MyDialogValueLabel.Size = New-Object -TypeName System.Drawing.Size(([Math]::Ceiling($TempValueLabelWidth * $TempFont.Width)), $TempHeight)
     
     $TempBottom = $MyDialogValueLabel.Bottom + $ControlSpace
     
