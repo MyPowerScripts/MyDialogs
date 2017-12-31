@@ -36,12 +36,14 @@ Import-Module -Name "$PWD\MyDialogs.psm1" -Verbose
 #Show-MyAboutDialog -ScriptBlock { Write-Host -Object "Easter Egg Script" } -Width 20
 #Show-MyAboutDialog -NoTitle -ScriptBlock { Write-Host -Object "Easter Egg Script" }
 
+Show-MyAboutDialog
 Get-MyItemDialog
 Get-MyItemListDialog
-
 Get-MyNamedItemDialog -Value ([Ordered]@{ "One" = 1; "Two" = 2; "Three" = 3; "Four" = 4; "Five" = 5; "Six" = 6; "Seven" = 7; "Eight" = 8; }) -ShowReset
-
+Get-MyResponseDialog -Message "This is a test"
 
 $Error
+
+Set-Location -Path "D:\"
 
 $Host.EnterNestedPrompt()

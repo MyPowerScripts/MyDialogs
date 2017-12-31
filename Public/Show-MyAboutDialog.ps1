@@ -11,14 +11,18 @@ function Show-MyAboutDialog()
       Title Bar Text of the Help-About Dialog
     .PARAMETER NoTitle
       Hide Help-About Dialog Title Bar
+    .PARAMETER ShowBorder
+      Show Border around Dialog
     .PARAMETER Image
       Base64 Encoded Image to show on the Help-About Dialog
     .PARAMETER Message
       Message to show on the Help-About Dialog
     .PARAMETER Width
       Width of Help-About Dialog Text
-    .PARAMETER TextAlignment
+    .PARAMETER MessageAlignment
       Alignment of the About-Help Text
+    .PARAMETER NoEscape
+      Don't allow the Esc Button to Cencel the Dialog
     .PARAMETER TopMost
       Display Help-About Dialog as the Top Most Window
     .PARAMETER ScriptBlock
@@ -57,11 +61,15 @@ function Show-MyAboutDialog()
     [Parameter(Mandatory = $True, ParameterSetName = "DialogNT")]
     [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNT")]
     [Switch]$NoTitle,
+    [Parameter(ParameterSetName = "DialogNT")]
+    [Parameter(ParameterSetName = "StandAloneNT")]
+    [Switch]$ShowBorder,
     [String]$Image,
     [String]$Message = "Application Name`n`r`n`rVersion`n`r`n`rby`n`r`n`rAuthor",
     [ValidateRange(20, 60)]
     [Int]$Width = 30,
-    [System.Drawing.ContentAlignment]$TextAlignment = [System.Drawing.ContentAlignment]::MiddleCenter,
+    [System.Drawing.ContentAlignment]$MessageAlignment = "MiddleCenter",
+    [Switch]$NoEscape,
     [Parameter(ParameterSetName = "StandAlone")]
     [Parameter(ParameterSetName = "StandAloneNT")]
     [Switch]$TopMost,
@@ -94,10 +102,10 @@ function Show-MyAboutDialog()
   #region $MyDialogForm = System.Windows.Forms.Form
   Write-Verbose -Message "Creating Form Control `$MyDialogForm"
   $MyDialogForm = New-Object -TypeName System.Windows.Forms.Form
-  $MyDialogForm.BackColor = $BackgroundColor
+  $MyDialogForm.BackColor = $ForegroundColor
   $MyDialogForm.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
   $MyDialogForm.Font = $TempFont.Bold
-  $MyDialogForm.ForeColor = $ForegroundColor
+  $MyDialogForm.ForeColor = $BackgroundColor
   if ($NoTitle)
   {
     $MyDialogForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
@@ -106,7 +114,7 @@ function Show-MyAboutDialog()
   {
     $MyDialogForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
   }
-  $MyDialogForm.KeyPreview = $True
+  $MyDialogForm.KeyPreview = (-not $NoEscape.IsPresent)
   $MyDialogForm.MaximizeBox = $False
   $MyDialogForm.MinimizeBox = $False
   $MyDialogForm.Name = "MyDialogForm"
@@ -172,14 +180,41 @@ function Show-MyAboutDialog()
     Write-Verbose -Message "Exit KeyDown Event for `$MyDialogForm"
   }
   #endregion
-  $MyDialogForm.add_KeyDown({ Start-MyDialogFormKeyDown -Sender $This -EventArg $PSItem })
+  if (-not $NoEscape.IsPresent)
+  {
+    $MyDialogForm.add_KeyDown({ Start-MyDialogFormKeyDown -Sender $This -EventArg $PSItem })
+  }
   
   #region ******** $MyDialogForm Controls ********
+  
+  if ($ShowBorder.IsPresent)
+  {
+    $BorderSpace = $ControlSpace
+  }
+  else
+  {
+    $BorderSpace = 0
+  }
+  
+  #region $MyDialogPanel = System.Windows.Forms.Panel
+  Write-Verbose -Message "Creating Form Control `$MyDialogPanel"
+  $MyDialogPanel = New-Object -TypeName System.Windows.Forms.Panel
+  $MyDialogForm.Controls.Add($MyDialogPanel)
+  $MyDialogPanel.BackColor = $BackgroundColor
+  $MyDialogPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+  $MyDialogPanel.Font = $MyDialogConfig.FontData.Regular
+  $MyDialogPanel.ForeColor = $ForegroundColor
+  $MyDialogPanel.Location = New-Object -TypeName System.Drawing.Point($BorderSpace, $BorderSpace)
+  $MyDialogPanel.Name = "MyDialogPanel"
+  $MyDialogPanel.Text = "MyDialogPanel"
+  #endregion
+  
+  #region ******** $MyDialogPanel Controls ********
   
   #region $MyDialogPictureBox = System.Windows.Forms.PictureBox
   Write-Verbose -Message "Creating Form Control `$MyDialogPictureBox"
   $MyDialogPictureBox = New-Object -TypeName System.Windows.Forms.PictureBox
-  $MyDialogForm.Controls.Add($MyDialogPictureBox)
+  $MyDialogPanel.Controls.Add($MyDialogPictureBox)
   $MyDialogPictureBox.AutoSize = $True
   $MyDialogPictureBox.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
   if ($PSBoundParameters.ContainsKey("Image"))
@@ -309,7 +344,7 @@ UUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQA
   #region $MyDialogLabel = System.Windows.Forms.Label
   Write-Verbose -Message "Creating Form Control `$MyDialogLabel"
   $MyDialogLabel = New-Object -TypeName System.Windows.Forms.Label
-  $MyDialogForm.Controls.Add($MyDialogLabel)
+  $MyDialogPanel.Controls.Add($MyDialogLabel)
   $MyDialogLabel.AutoSize = $False
   $MyDialogLabel.BorderStyle = [System.Windows.Forms.BorderStyle]::None
   $MyDialogLabel.Font = $TempFont.Regular
@@ -317,35 +352,39 @@ UUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQA
   $MyDialogLabel.Location = New-Object -TypeName System.Drawing.Point(($MyDialogPictureBox.Right + $ControlSpace), $ControlSpace)
   $MyDialogLabel.Name = "MyDialogLabel"
   $MyDialogLabel.Text = $Message
-  $MyDialogLabel.TextAlign = $TextAlignment
+  $MyDialogLabel.TextAlign = $MessageAlignment
   $MyDialogLabel.Width = $TempFont.Width * $Width
   #endregion
   
-  #region $MyDialog01Button = System.Windows.Forms.Button
-  Write-Verbose -Message "Creating Form Control `$MyDialog01Button"
-  $MyDialog01Button = New-Object -TypeName System.Windows.Forms.Button
-  $MyDialogForm.Controls.Add($MyDialog01Button)
-  $MyDialog01Button.AutoSize = $True
-  $MyDialog01Button.BackColor = $ButtonBackgroundColor
-  $MyDialog01Button.DialogResult = [System.Windows.Forms.DialogResult]::OK
-  $MyDialog01Button.Font = New-Object -TypeName System.Drawing.Font($FontFamily, $FontSize, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Point)
-  $MyDialog01Button.ForeColor = $ButtonForegroundColor
-  $MyDialog01Button.Name = "MyDialog01Button"
-  $MyDialog01Button.Text = "OK"
-  if ($MyDialogPictureBox.Height -lt (($MyDialog01Button.Height + $ControlSpace) * 4))
+  #region $MyDialogButton = System.Windows.Forms.Button
+  Write-Verbose -Message "Creating Form Control `$MyDialogButton"
+  $MyDialogButton = New-Object -TypeName System.Windows.Forms.Button
+  $MyDialogPanel.Controls.Add($MyDialogButton)
+  $MyDialogButton.AutoSize = $True
+  $MyDialogButton.BackColor = $ButtonBackgroundColor
+  $MyDialogButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+  $MyDialogButton.Font = $TempFont.Bold
+  $MyDialogButton.ForeColor = $ButtonForegroundColor
+  $MyDialogButton.Name = "MyDialogButton"
+  $MyDialogButton.Text = "OK"
+  if ($MyDialogPictureBox.Height -lt (($MyDialogButton.Height + $ControlSpace) * 4))
   {
-    $MyDialog01Button.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, ($MyDialogPictureBox.Bottom + $ControlSpace))
+    $MyDialogButton.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, ($MyDialogPictureBox.Bottom + $ControlSpace))
   }
   else
   {
-    $MyDialog01Button.Location = New-Object -TypeName System.Drawing.Point(($MyDialogPictureBox.Right + $ControlSpace), ($MyDialogPictureBox.Bottom - $MyDialog01Button.Height))
+    $MyDialogButton.Location = New-Object -TypeName System.Drawing.Point(($MyDialogPictureBox.Right + $ControlSpace), ($MyDialogPictureBox.Bottom - $MyDialogButton.Height))
   }
-  $MyDialog01Button.Width = $MyDialogLabel.Right - $MyDialog01Button.Left
+  $MyDialogButton.Width = $MyDialogLabel.Right - $MyDialogButton.Left
   #endregion
   
-  $MyDialogLabel.Height = $MyDialogPictureBox.Height - ($MyDialog01Button.Height + $ControlSpace)
+  $MyDialogLabel.Height = $MyDialogPictureBox.Height - ($MyDialogButton.Height + $ControlSpace)
   
-  $MyDialogForm.ClientSize = New-Object -TypeName System.Drawing.Size(($($MyDialogForm.Controls[$MyDialogForm.Controls.Count - 1]).Right + $ControlSpace), ($($MyDialogForm.Controls[$MyDialogForm.Controls.Count - 1]).Bottom + $ControlSpace))
+  $MyDialogPanel.ClientSize = New-Object -TypeName System.Drawing.Size(($MyDialogButton.Right + $ControlSpace), ($MyDialogButton.Bottom + $ControlSpace))
+  
+  #endregion
+  
+  $MyDialogForm.ClientSize = New-Object -TypeName System.Drawing.Size(($MyDialogPanel.Right + $BorderSpace), ($MyDialogPanel.Bottom + $BorderSpace))
   
   #endregion
   

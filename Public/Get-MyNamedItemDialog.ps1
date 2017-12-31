@@ -11,6 +11,8 @@ function Get-MyNamedItemDialog()
       Name of the Dialog
     .PARAMETER NoTitle
       Hide Dialog Title Bar
+    .PARAMETER ShowBorder
+      Show Border around Dialog
     .PARAMETER GroupName
       Name of Return Control Group
     .PARAMETER ValueLabelWidth
@@ -34,6 +36,8 @@ function Get-MyNamedItemDialog()
       Show Reset Value Button
     .PARAMETER NoCancel
       No Cancel Dialog Button
+    .PARAMETER NoEscape
+      Don't allow the Esc Button to Cencel the Dialog
     .PARAMETER TopMost
       Show Dialog as the TopMost Form
     .PARAMETER Owner
@@ -74,6 +78,9 @@ function Get-MyNamedItemDialog()
     [Parameter(Mandatory = $True, ParameterSetName = "DialogNT")]
     [Parameter(Mandatory = $True, ParameterSetName = "StandAloneNT")]
     [Switch]$NoTitle,
+    [Parameter(ParameterSetName = "DialogNT")]
+    [Parameter(ParameterSetName = "StandAloneNT")]
+    [Switch]$ShowBorder,
     [String]$GroupName = "Get MyItem Value",
     [ValidateRange(0, 50)]
     [Int]$ValueLabelWidth = 0,
@@ -87,6 +94,7 @@ function Get-MyNamedItemDialog()
     [String]$ValidateValue = "^(?<Return>.+)`$",
     [Switch]$ShowReset,
     [Switch]$NoCancel,
+    [Switch]$NoEscape,
     [Parameter(ParameterSetName = "StandAlone")]
     [Parameter(ParameterSetName = "StandAloneNT")]
     [Switch]$TopMost,
@@ -121,10 +129,10 @@ function Get-MyNamedItemDialog()
   #region $MyDialogForm = System.Windows.Forms.Form
   Write-Verbose -Message "Creating Form Control `$MyDialogForm"
   $MyDialogForm = New-Object -TypeName System.Windows.Forms.Form
-  $MyDialogForm.BackColor = $BackgroundColor
+  $MyDialogForm.BackColor = $ForegroundColor
   $MyDialogForm.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
   $MyDialogForm.Font = $TempFont.Bold
-  $MyDialogForm.ForeColor = $ForegroundColor
+  $MyDialogForm.ForeColor = $BackgroundColor
   if ($NoTitle)
   {
     $MyDialogForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
@@ -133,7 +141,7 @@ function Get-MyNamedItemDialog()
   {
     $MyDialogForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
   }
-  $MyDialogForm.KeyPreview = $True
+  $MyDialogForm.KeyPreview = (-not $NoEscape.IsPresent)
   $MyDialogForm.MaximizeBox = $False
   $MyDialogForm.MinimizeBox = $False
   $MyDialogForm.Name = "MyDialogForm"
@@ -191,49 +199,66 @@ function Get-MyNamedItemDialog()
     Write-Verbose -Message "Exit KeyDown Event for `$MyDialogForm"
   }
   #endregion
-  if (-not $NoCancel.IsPresent)
+  if ((-not $NoCancel.IsPresent) -or (-not $NoEscape.IsPresent))
   {
     $MyDialogForm.add_KeyDown({ Start-MyDialogFormKeyDown -Sender $This -EventArg $PSItem })
   }
   
   #region ******** $MyDialogForm Controls ********
   
-  #region $MyDialogReturnGroupBox = System.Windows.Forms.GroupBox
-  Write-Verbose -Message "Creating Form Control `$MyDialogReturnGroupBox"
-  $MyDialogReturnGroupBox = New-Object -TypeName System.Windows.Forms.GroupBox
-  $MyDialogForm.Controls.Add($MyDialogReturnGroupBox)
-  #$MyDialogReturnGroupBox.BackColor = $MyDialogColor.BackColor
-  $MyDialogReturnGroupBox.Font = $TempFont.Bold
-  $MyDialogReturnGroupBox.ForeColor = $GroupForegroundColor
-  #$MyDialogReturnGroupBox.Height = 100
-  $MyDialogReturnGroupBox.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, $ControlSpace)
-  $MyDialogReturnGroupBox.Name = "MyDialogReturnGroupBox"
-  #$MyDialogReturnGroupBox.Size = New-Object -TypeName System.Drawing.Size(200, 100)
-  #$MyDialogReturnGroupBox.TabIndex = 0
-  #$MyDialogReturnGroupBox.TabStop = $False
-  #$MyDialogReturnGroupBox.Tag = $Null
-  $MyDialogReturnGroupBox.Text = $GroupName
-  #$MyDialogReturnGroupBox.Width = 200
+  if ($ShowBorder.IsPresent)
+  {
+    $BorderSpace = $ControlSpace
+  }
+  else
+  {
+    $BorderSpace = 0
+  }
+  
+  #region $MyDialogPanel = System.Windows.Forms.Panel
+  Write-Verbose -Message "Creating Form Control `$MyDialogPanel"
+  $MyDialogPanel = New-Object -TypeName System.Windows.Forms.Panel
+  $MyDialogForm.Controls.Add($MyDialogPanel)
+  $MyDialogPanel.BackColor = $BackgroundColor
+  $MyDialogPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+  $MyDialogPanel.Font = $MyDialogConfig.FontData.Regular
+  $MyDialogPanel.ForeColor = $ForegroundColor
+  $MyDialogPanel.Location = New-Object -TypeName System.Drawing.Point($BorderSpace, $BorderSpace)
+  $MyDialogPanel.Name = "MyDialogPanel"
+  $MyDialogPanel.Text = "MyDialogPanel"
   #endregion
   
-  #region ******** $MyDialogReturnGroupBox Controls ********
+  #region ******** $MyDialogPanel Controls ********
+  
+  #region $MyDialogGroupBox = System.Windows.Forms.GroupBox
+  Write-Verbose -Message "Creating Form Control `$MyDialogGroupBox"
+  $MyDialogGroupBox = New-Object -TypeName System.Windows.Forms.GroupBox
+  $MyDialogPanel.Controls.Add($MyDialogGroupBox)
+  $MyDialogGroupBox.Font = $TempFont.Bold
+  $MyDialogGroupBox.ForeColor = $GroupForegroundColor
+  $MyDialogGroupBox.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, $ControlSpace)
+  $MyDialogGroupBox.Name = "MyDialogGroupBox"
+  $MyDialogGroupBox.Text = $GroupName
+  #endregion
+  
+  #region ******** $MyDialogGroupBox Controls ********
   
   $TempValueLabelWidth = [Math]::Max($ValueLabelWidth, (($Value.Keys | Sort-Object -Property Length -Descending | Select-Object -ExpandProperty Length -Unique -First 1) + 2))
   
-  #region function Start-MyDialogValueTextBoxKeyPress
-  function Start-MyDialogValueTextBoxKeyPress()
+  #region function Start-MyDialogTextBoxKeyPress
+  function Start-MyDialogTextBoxKeyPress()
   {
   <#
     .SYNOPSIS
-      KeyPress event for the MyDialogValueTextBox Control
+      KeyPress event for the MyDialogTextBox Control
     .DESCRIPTION
-      KeyPress event for the MyDialogValueTextBox Control
+      KeyPress event for the MyDialogTextBox Control
     .PARAMETER Sender
        The Form Control that fired the Event
     .PARAMETER EventArg
        The Event Arguments for the Event
     .EXAMPLE
-       Start-MyDialogValueTextBoxKeyPress -Sender $Sender -EventArg $EventArg
+       Start-MyDialogTextBoxKeyPress -Sender $Sender -EventArg $EventArg
     .NOTES
       Original Function By Ken Sweet
     .LINK
@@ -245,78 +270,78 @@ function Get-MyNamedItemDialog()
       [parameter(Mandatory = $True)]
       [Object]$EventArg
     )
-    Write-Verbose -Message "Enter KeyPress Event for `$MyDialogValueTextBox"
+    Write-Verbose -Message "Enter KeyPress Event for `$MyDialogTextBox"
     
     if ((-not ([RegEx]::Match($EventArg.KeyChar, $ValidateKeyPress)).Success) -and (([INT]($EventArg.KeyChar) -ne 8)))
     {
       $EventArg.Handled = $True
     }
     
-    Write-Verbose -Message "Exit KeyPress Event for `$MyDialogValueTextBox"
+    Write-Verbose -Message "Exit KeyPress Event for `$MyDialogTextBox"
   }
   #endregion
   
   $TempBottom = $TempFont.Height
   ForEach ($Key in $Value.Keys)
   {
-    #region $MyDialogValueLabel = System.Windows.Forms.Label
-    Write-Verbose -Message "Creating Form Control `$MyDialogValueLabel"
-    $MyDialogValueLabel = New-Object -TypeName System.Windows.Forms.Label
-    $MyDialogReturnGroupBox.Controls.Add($MyDialogValueLabel)
-    $MyDialogValueLabel.AutoSize = $True
-    $MyDialogValueLabel.Font = $TempFont.Regular
-    $MyDialogValueLabel.ForeColor = $LabelForegroundColor
-    $MyDialogValueLabel.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, $TempBottom)
-    $MyDialogValueLabel.Name = "MyDialogValueLabel"
-    $MyDialogValueLabel.Text = "$($Key):"
-    $MyDialogValueLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleRight
-    #$MyDialogValueLabel.Width = 100
+    #region $MyDialogLabel = System.Windows.Forms.Label
+    Write-Verbose -Message "Creating Form Control `$MyDialogLabel"
+    $MyDialogLabel = New-Object -TypeName System.Windows.Forms.Label
+    $MyDialogGroupBox.Controls.Add($MyDialogLabel)
+    $MyDialogLabel.AutoSize = $True
+    $MyDialogLabel.Font = $TempFont.Regular
+    $MyDialogLabel.ForeColor = $LabelForegroundColor
+    $MyDialogLabel.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, $TempBottom)
+    $MyDialogLabel.Name = "MyDialogLabel"
+    $MyDialogLabel.Text = "$($Key):"
+    $MyDialogLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleRight
+    #$MyDialogLabel.Width = 100
     #endregion
-    $TempHeight = $MyDialogValueLabel.Height
-    $MyDialogValueLabel.AutoSize = $False
-    $MyDialogValueLabel.Size = New-Object -TypeName System.Drawing.Size(([Math]::Ceiling($TempValueLabelWidth * $TempFont.Width)), $TempHeight)
+    $TempHeight = $MyDialogLabel.Height
+    $MyDialogLabel.AutoSize = $False
+    $MyDialogLabel.Size = New-Object -TypeName System.Drawing.Size(([Math]::Ceiling($TempValueLabelWidth * $TempFont.Width)), $TempHeight)
     
-    $TempBottom = $MyDialogValueLabel.Bottom + $ControlSpace
+    $TempBottom = $MyDialogLabel.Bottom + $ControlSpace
     
-    #region $MyDialogValueTextBox = System.Windows.Forms.TextBox
-    Write-Verbose -Message "Creating Form Control `$MyDialogValueTextBox"
-    $MyDialogValueTextBox = New-Object -TypeName System.Windows.Forms.TextBox
-    $MyDialogReturnGroupBox.Controls.Add($MyDialogValueTextBox)
-    $MyDialogValueTextBox.BackColor = $TextBackgroundColor
-    $MyDialogValueTextBox.Font = $TempFont.Regular
-    $MyDialogValueTextBox.ForeColor = $TextForegroundColor
-    $MyDialogValueTextBox.Location = New-Object -TypeName System.Drawing.Point(($MyDialogValueLabel.Right + $ControlSpace), $MyDialogValueLabel.Top)
-    $MyDialogValueTextBox.MaxLength = $MaxLength
-    $MyDialogValueTextBox.Name = $Key
-    $MyDialogValueTextBox.SelectedText = ""
-    $MyDialogValueTextBox.SelectionLength = 0
-    $MyDialogValueTextBox.SelectionStart = 0
-    $MyDialogValueTextBox.Text = $Value[$Key]
-    $MyDialogValueTextBox.Width = [Math]::Ceiling($ValueWidth * $TempFont.Width)
+    #region $MyDialogTextBox = System.Windows.Forms.TextBox
+    Write-Verbose -Message "Creating Form Control `$MyDialogTextBox"
+    $MyDialogTextBox = New-Object -TypeName System.Windows.Forms.TextBox
+    $MyDialogGroupBox.Controls.Add($MyDialogTextBox)
+    $MyDialogTextBox.BackColor = $TextBackgroundColor
+    $MyDialogTextBox.Font = $TempFont.Regular
+    $MyDialogTextBox.ForeColor = $TextForegroundColor
+    $MyDialogTextBox.Location = New-Object -TypeName System.Drawing.Point(($MyDialogLabel.Right + $ControlSpace), $MyDialogLabel.Top)
+    $MyDialogTextBox.MaxLength = $MaxLength
+    $MyDialogTextBox.Name = $Key
+    $MyDialogTextBox.SelectedText = ""
+    $MyDialogTextBox.SelectionLength = 0
+    $MyDialogTextBox.SelectionStart = 0
+    $MyDialogTextBox.Text = $Value[$Key]
+    $MyDialogTextBox.Width = [Math]::Ceiling($ValueWidth * $TempFont.Width)
     #endregion
     
     if ($PSBoundParameters.ContainsKey("ValidateKeyPress"))
     {
-      $MyDialogValueTextBox.add_KeyPress({ Start-MyDialogValueTextBoxKeyPress -Sender $This -EventArg $PSItem })
+      $MyDialogTextBox.add_KeyPress({ Start-MyDialogTextBoxKeyPress -Sender $This -EventArg $PSItem })
     }
   }
     
-  $MyDialogReturnGroupBox.ClientSize = New-Object -TypeName System.Drawing.Size(($MyDialogValueTextBox.Right + $ControlSpace), ($MyDialogValueTextBox.Bottom + $ControlSpace))
+  $MyDialogGroupBox.ClientSize = New-Object -TypeName System.Drawing.Size(($MyDialogTextBox.Right + $ControlSpace), ($MyDialogTextBox.Bottom + $ControlSpace))
   
   #endregion
   
-  $TempWidth = [Math]::Floor(($MyDialogReturnGroupBox.Width - $ControlSpace) / 3)
-  $TempMod = ($MyDialogReturnGroupBox.Width - $ControlSpace) % $TempWidth
+  $TempWidth = [Math]::Floor(($MyDialogGroupBox.Width - ($ControlSpace * 2)) / 3)
+  $TempMod = ($MyDialogGroupBox.Width - ($ControlSpace * 2)) % 3
   
   #region $MyDialogOKButton = System.Windows.Forms.Button
   Write-Verbose -Message "Creating Form Control `$MyDialogOKButton"
   $MyDialogOKButton = New-Object -TypeName System.Windows.Forms.Button
-  $MyDialogForm.Controls.Add($MyDialogOKButton)
+  $MyDialogPanel.Controls.Add($MyDialogOKButton)
   $MyDialogOKButton.AutoSize = $True
   $MyDialogOKButton.BackColor = $ButtonBackgroundColor
   $MyDialogOKButton.Font = $TempFont.Bold
   $MyDialogOKButton.ForeColor = $ButtonForegroundColor
-  $MyDialogOKButton.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, ($MyDialogReturnGroupBox.Bottom + $ControlSpace))
+  $MyDialogOKButton.Location = New-Object -TypeName System.Drawing.Point($ControlSpace, ($MyDialogGroupBox.Bottom + $ControlSpace))
   $MyDialogOKButton.Name = "MyDialogOKButton"
   $MyDialogOKButton.Text = "OK"
   $MyDialogOKButton.Width = $TempWidth
@@ -352,7 +377,7 @@ function Get-MyNamedItemDialog()
     $ReturnValue = [Ordered]@{}
     foreach ($Key in $MyDialogForm.Tag.Keys)
     {
-      if (($Match = [RegEx]::Match($MyDialogReturnGroupBox.Controls[$Key].Text, $ValidateValue)).Groups["Return"].Success)
+      if (($Match = [RegEx]::Match($MyDialogGroupBox.Controls[$Key].Text, $ValidateValue)).Groups["Return"].Success)
       {
         $ReturnValue.Add($Key, $Match.Groups["Return"].Value)
       }
@@ -374,7 +399,7 @@ function Get-MyNamedItemDialog()
     #region $MyDialogResetButton = System.Windows.Forms.Button
     Write-Verbose -Message "Creating Form Control `$MyDialogResetButton"
     $MyDialogResetButton = New-Object -TypeName System.Windows.Forms.Button
-    $MyDialogForm.Controls.Add($MyDialogResetButton)
+    $MyDialogPanel.Controls.Add($MyDialogResetButton)
     $MyDialogResetButton.AutoSize = $True
     $MyDialogResetButton.BackColor = $ButtonBackgroundColor
     $MyDialogResetButton.Font = $TempFont.Bold
@@ -414,7 +439,7 @@ function Get-MyNamedItemDialog()
       
       ForEach ($Key in $MyDialogForm.Tag.Keys)
       {
-        $MyDialogReturnGroupBox.Controls[$Key].Text = $MyDialogForm.Tag[$Key]
+        $MyDialogGroupBox.Controls[$Key].Text = $MyDialogForm.Tag[$Key]
       }
       
       Write-Verbose -Message "Exit Click Event for `$MyDialogResetButton"
@@ -426,7 +451,7 @@ function Get-MyNamedItemDialog()
   #region $MyDialogCancelButton = System.Windows.Forms.Button
   Write-Verbose -Message "Creating Form Control `$MyDialogCancelButton"
   $MyDialogCancelButton = New-Object -TypeName System.Windows.Forms.Button
-  $MyDialogForm.Controls.Add($MyDialogCancelButton)
+  $MyDialogPanel.Controls.Add($MyDialogCancelButton)
   $MyDialogCancelButton.AutoSize = $True
   $MyDialogCancelButton.BackColor = $ButtonBackgroundColor
   $MyDialogCancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
@@ -439,7 +464,11 @@ function Get-MyNamedItemDialog()
   $MyDialogCancelButton.Width = $MyDialogOKButton.Width
   #endregion
   
-  $MyDialogForm.ClientSize = New-Object -TypeName System.Drawing.Size(($MyDialogCancelButton.Right + $ControlSpace), ($MyDialogCancelButton.Bottom + $ControlSpace))
+  $MyDialogPanel.ClientSize = New-Object -TypeName System.Drawing.Size(($MyDialogCancelButton.Right + $ControlSpace), ($MyDialogCancelButton.Bottom + $ControlSpace))
+  
+  #endregion
+  
+  $MyDialogForm.ClientSize = New-Object -TypeName System.Drawing.Size(($MyDialogPanel.Right + $BorderSpace), ($MyDialogPanel.Bottom + $BorderSpace))
   
   #endregion
   
